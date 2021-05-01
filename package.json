@@ -8,7 +8,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.19.0",
     "firebase": "^8.4.2",
+    "node-localstorage": "^2.1.6",
     "polka": "^0.5.2",
     "ws": "^7.4.5"
   },

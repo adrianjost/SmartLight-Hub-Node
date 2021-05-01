@@ -1,0 +1,74 @@
+:root {
+  --color-background: #333;
+  --color-border: #191919;
+  --color-overlay: #191919;
+  --color-border-i: #e6e6e6;
+  --color-overlay-i: #e6e6e6;
+  --color-skeleton: rgba(0, 0, 0, 0.1);
+  --color-skeleton-i: hsla(0, 0%, 90.2%, 0.1);
+  --color-skeleton-border: rgba(0, 0, 0, 0.5);
+  --color-text: #d2d2d2;
+  --color-text-active: #fff;
+  --color-text-inactive: #aaa;
+  --color-text-i: #2d2d2d;
+  --color-text-active-i: #000;
+  --color-text-inactive-i: #5f5f5f;
+}
+body {
+  font: 400 18px/1.1 sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Ubuntu,
+    Helvetica Neue, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-align: center;
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0;
+  padding: 2em;
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+}
+
+label {
+  display: block;
+  margin: 1em auto;
+}
+
+input {
+  display: block;
+  margin: 0.5em auto;
+  min-width: 300px;
+  width: 100%;
+  max-width: 500px;
+  font-size: 1em;
+  line-height: inherit;
+  padding: 8px;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+button {
+  padding: 8px 16px;
+  margin: 0 4px;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  background: transparent;
+}
