@@ -7,6 +7,7 @@ const fs = require("fs").promises;
 const { urlencoded } = require("body-parser");
 
 const LocalStorage = require("node-localstorage").LocalStorage;
+const { waitForDebugger } = require("inspector");
 localStorage = new LocalStorage("./localstorage");
 
 const styles = `<link rel="stylesheet" href="/styles.css">`;
@@ -67,6 +68,7 @@ async function updateLocalUnit(unit) {
     );
     ws.close();
   });
+  ws.on("error", console.error)
 }
 
 async function init() {
