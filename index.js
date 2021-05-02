@@ -7,10 +7,10 @@ const fs = require("fs").promises;
 const { urlencoded } = require("body-parser");
 
 const LocalStorage = require("node-localstorage").LocalStorage;
-const { waitForDebugger } = require("inspector");
 localStorage = new LocalStorage("./localstorage");
 
-const styles = `<link rel="stylesheet" href="/styles.css">`;
+const head = `<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/styles.css">`;
 
 const firebaseConfig = {
   apiKey: "AIzaSyDJ17cuZ4P1YzSTOWtU_WqOKMloaqg7x_Q",
@@ -140,7 +140,7 @@ polka()
     res.writeHead(200, {
       "Content-Type": "text/html; charset=utf-8",
     });
-    res.end(`${styles}
+    res.end(`${head}
     <p style="font-size: 3em;">🎉 🎉 🎉</p>
     <p>🔓 You are logged in as ${credential.user.email}. 🔓</p>
     <p>Click <a href="/logout">here</a> to logout.</p>
@@ -177,7 +177,7 @@ polka()
     });
     res.end(`
     <meta http-equiv="refresh" content="5; URL=/">
-    ${styles}
+    ${head}
     <p>🔒 You have been logged out. 🔒</p>
     <p>Click <a href="/">here</a> to login again.</p>`);
   })
