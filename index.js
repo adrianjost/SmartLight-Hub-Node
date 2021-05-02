@@ -12,6 +12,8 @@ localStorage = new LocalStorage("./localstorage");
 const head = `<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="/styles.css">`;
 
+const MESSAGE_ID_TIMEOUT = 10000;
+
 const firebaseConfig = {
 	apiKey: "AIzaSyDJ17cuZ4P1YzSTOWtU_WqOKMloaqg7x_Q",
 	authDomain: "smartlight-4861d.firebaseapp.com",
@@ -28,6 +30,8 @@ const db = firebase.firestore();
 var unitsRef = db.collection("units");
 
 let credential = null;
+
+const sendMessageIDs = {};
 
 const hex2rgb = (hexColor) => {
 	// remove leading #
@@ -75,14 +79,14 @@ function unitStateToMessage(unit) {
 		};
 	}
 	// legacy handling - state.color should not be used anymore
-	if (state.color !== null || state.type === "COLOR") {
+	if (state.color !== null || state.type === "MANUAL") {
 		const channelValues = colorToChannel(
 			unit.channelMap,
 			hex2rgb(state.data || state.color)
 		);
 		return {
 			action: "SET /output/channel",
-			data: channelValues,
+			data: [channelValues[0], channelValues[1]],
 		};
 	}
 }
@@ -95,9 +99,16 @@ async function updateLocalUnit(unit) {
 	});
 	ws.on("open", function open() {
 		console.log(`connected to ${ip}`);
-		const message = JSON.stringify(unitStateToMessage(unit));
-		console.log(`sending ${message} to ${ip}`);
-		ws.send(message);
+		const message = unitStateToMessage(unit);
+		const randomID = Math.round(Math.random() * 1000000);
+		sendMessageIDs[randomID] = true;
+		message.id = randomID;
+		setTimeout(() => {
+			delete sendMessageIDs[randomID];
+		}, MESSAGE_ID_TIMEOUT);
+		const messageString = JSON.stringify(message);
+		console.log(`sending ${messageString} to ${ip}`);
+		ws.send(messageString);
 		ws.close();
 	});
 	ws.on("error", console.error);
