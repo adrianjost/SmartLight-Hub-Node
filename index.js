@@ -91,6 +91,37 @@ function unitStateToMessage(unit) {
 	}
 }
 
+async function messageToDatabaseState(unitRef, message) {
+	if (message.action !== "GET /output") {
+		console.log("can't handle message (yet)");
+		return;
+	}
+	const currentHexColor = "#ff0000"; // TODO: update color with correct value
+	switch (message.data.state) {
+		case "OFF": {
+			await unitRef.update({
+				state: {
+					color: "#000000",
+					type: "OFF",
+				},
+			});
+			return;
+		}
+		case "TIME":
+		case "MANUAL": {
+			await unitRef.update({
+				state: {
+					color: currentHexColor,
+					type: message.data.state,
+				},
+			});
+			return;
+		}
+		default:
+			throw new Error("can't handle unit state (yet)");
+	}
+}
+
 async function updateLocalUnit(unit) {
 	const ip = unit.hostname || unit.ip;
 	console.log(`connecting to ${ip}`);
