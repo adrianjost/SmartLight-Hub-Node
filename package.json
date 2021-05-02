@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "git pull && npm ci --production && node ./index.js",
+    "start": "git pull && npm ci && node ./index.js",
     "dev": "nodemon ./index.js"
   },
   "author": "",
