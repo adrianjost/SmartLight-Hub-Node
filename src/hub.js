@@ -61,7 +61,7 @@ function createConnection(unit) {
   };
 }
 
-async function onAdd(unit) {
+function onAdd(unit) {
   const connection = createConnection(unit);
   connection.rws.onerror = console.error;
   connection.rws.onmessage = throttle(5000, false, (message) => {
@@ -70,7 +70,7 @@ async function onAdd(unit) {
   kv.connections[unit.id] = connection;
 }
 
-async function onModify(unit) {
+function onModify(unit) {
   // TODO: modify connection url list when unit get's modified
   const connection = kv.connections[unit.id];
   const newUrls = [`ws://${unit.hostname}`, `ws://${unit.ip}`];
@@ -91,10 +91,17 @@ async function onModify(unit) {
   connection.rws.send(messageString);
 }
 
-async function onRemove(unit) {
+function onRemove(unit) {
   const connection = kv.connections[unit.id];
   connection.rws.close();
   delete kv.connections[unit.id];
+}
+
+function resetConnections() {
+  Object.entries(kv.connections).forEach(([key, value]) => {
+    value.rws.close();
+    delete kv.connections[key];
+  });
 }
 
 async function init() {
@@ -104,7 +111,7 @@ async function init() {
       console.log("No saved credential found");
       return;
     }
-    console.log("saved loginData", savedLogin);
+    console.log("Login with saved credentials");
     loginData = JSON.parse(savedLogin);
     kv.credential = await firebase
       .auth()
@@ -139,6 +146,7 @@ async function init() {
     kv.unsubscribeDatabase = async () => {
       await unsubscribeDatabase();
       delete kv.unsubscribeDatabase;
+      resetConnections();
     };
   } catch (error) {
     console.error("catched error", error);
