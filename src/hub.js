@@ -1,144 +1,150 @@
 const { localStorage, kv } = require("./storage");
-const { hex2rgb, colorToChannel } = require("./color");
+const ReconnectingWebSocket = require("reconnecting-websocket");
 const WebSocket = require("ws");
 const { firebase, db } = require("./firebase");
+const { throttle } = require("throttle-debounce");
 
 const MESSAGE_ID_TIMEOUT = 10000;
 
+const UNITS_COLLECTION = db.collection("units");
+
 kv.sendMessageIDs = {};
+kv.connections = {};
 
-function unitStateToMessage(unit) {
-	const state = unit.state;
-	console.log(state);
-	if (state.type === "OFF") {
-		return {
-			action: "SET /output/power",
-			data: 0,
-		};
-	}
-	if (state.type === "TIME") {
-		return {
-			action: "SET /output/power",
-			data: 1,
-		};
-	}
-	// legacy handling - state.color should not be used anymore
-	if (state.color !== null || state.type === "MANUAL") {
-		const channelValues = colorToChannel(
-			unit.channelMap,
-			hex2rgb(state.data || state.color)
-		);
-		return {
-			action: "SET /output/channel",
-			data: [channelValues[0], channelValues[1]],
-		};
-	}
+const { dbStateToMessage, messageToDBState } = require("./translation");
+
+async function updateDBFromMessage(unit, messageEvent) {
+  const message = JSON.parse(messageEvent.data);
+
+  if (kv.sendMessageIDs[message.id] === true) {
+    console.log("skip updating db, message was initialized by hub");
+    return;
+  }
+  const newState = messageToDBState(unit, message);
+  console.log("new state", newState);
+  if (newState === null) {
+    return;
+  }
+  const unitRef = UNITS_COLLECTION.doc(unit.id);
+  await unitRef.update({
+    state: newState,
+  });
 }
 
-async function messageToDatabaseState(unitRef, message) {
-	if (message.action !== "GET /output") {
-		console.log("can't handle message (yet)");
-		return;
-	}
-	const currentHexColor = "#ff0000"; // TODO: update color with correct value
-	switch (message.data.state) {
-		case "OFF": {
-			await unitRef.update({
-				state: {
-					color: "#000000",
-					type: "OFF",
-				},
-			});
-			return;
-		}
-		case "TIME":
-		case "MANUAL": {
-			await unitRef.update({
-				state: {
-					color: currentHexColor,
-					type: message.data.state,
-				},
-			});
-			return;
-		}
-		default:
-			throw new Error("can't handle unit state (yet)");
-	}
+function createConnection(unit) {
+  let workingURLIndex = 0;
+  const urls = [`ws://${unit.hostname}`, `ws://${unit.ip}`];
+  let urlHealthTimeout = null;
+  const urlProvider = () => {
+    const currentIndex = workingURLIndex;
+    const url = urls[currentIndex];
+
+    // increment by default, in case the connection does fail
+    workingURLIndex = (workingURLIndex + 1) % urls.length;
+
+    if (urlHealthTimeout !== null) {
+      clearTimeout(urlHealthTimeout);
+    }
+    urlHealthTimeout = setTimeout(() => {
+      urlHealthTimeout = null;
+      workingURLIndex = currentIndex;
+    }, 20000);
+
+    return url;
+  };
+  const rws = new ReconnectingWebSocket(urlProvider, [], {
+    WebSocket: WebSocket,
+  });
+  return {
+    urls,
+    rws,
+  };
 }
 
-async function updateLocalUnit(unit) {
-	const ip = unit.hostname || unit.ip;
-	console.log(`connecting to ${ip}`);
-	const ws = new WebSocket(`ws://${ip}`, {
-		perMessageDeflate: false,
-	});
-	ws.on("open", function open() {
-		console.log(`connected to ${ip}`);
-		const message = unitStateToMessage(unit);
-		const randomID = Math.round(Math.random() * 1000000);
-		kv.sendMessageIDs[randomID] = true;
-		message.id = randomID;
-		setTimeout(() => {
-			delete kv.sendMessageIDs[randomID];
-		}, MESSAGE_ID_TIMEOUT);
-		const messageString = JSON.stringify(message);
-		console.log(`sending ${messageString} to ${ip}`);
-		ws.send(messageString);
-		ws.close();
-	});
-	ws.on("error", console.error);
+async function onAdd(unit) {
+  const connection = createConnection(unit);
+  connection.rws.onerror = console.error;
+  connection.rws.onmessage = throttle(5000, false, (message) => {
+    updateDBFromMessage(unit, message);
+  });
+  kv.connections[unit.id] = connection;
+}
+
+async function onModify(unit) {
+  // TODO: modify connection url list when unit get's modified
+  const connection = kv.connections[unit.id];
+  const newUrls = [`ws://${unit.hostname}`, `ws://${unit.ip}`];
+  connection.urls.splice(0, connection.urls.length);
+  connection.urls.push(...newUrls);
+
+  const message = dbStateToMessage(unit);
+
+  const randomID = Math.round(Math.random() * 1000000);
+  kv.sendMessageIDs[randomID] = true;
+  message.id = randomID;
+  setTimeout(() => {
+    delete kv.sendMessageIDs[randomID];
+  }, MESSAGE_ID_TIMEOUT);
+
+  const messageString = JSON.stringify(message);
+  console.log(`sending ${messageString} to ${unit.id}`);
+  connection.rws.send(messageString);
+}
+
+async function onRemove(unit) {
+  const connection = kv.connections[unit.id];
+  connection.rws.close();
+  delete kv.connections[unit.id];
 }
 
 async function init() {
-	try {
-		const savedLogin = localStorage.getItem("credential");
-		if (savedLogin === null) {
-			console.log("No saved credential found");
-			return;
-		}
-		console.log("saved loginData", savedLogin);
-		loginData = JSON.parse(savedLogin);
-		kv.credential = await firebase
-			.auth()
-			.signInWithEmailAndPassword(loginData.email, loginData.password);
+  try {
+    const savedLogin = localStorage.getItem("credential");
+    if (savedLogin === null) {
+      console.log("No saved credential found");
+      return;
+    }
+    console.log("saved loginData", savedLogin);
+    loginData = JSON.parse(savedLogin);
+    kv.credential = await firebase
+      .auth()
+      .signInWithEmailAndPassword(loginData.email, loginData.password);
 
-		console.log(kv.credential.user.uid);
+    console.log(kv.credential.user.uid);
 
-		const unsubscribeDatabase = db
-			.collection("units")
-			.where("allowedUsers", "array-contains", kv.credential.user.uid)
-			.where("type", "==", "LAMP")
-			.onSnapshot((querySnapshot) => {
-				querySnapshot.docChanges().forEach((change) => {
-					if (change.type === "added") {
-						console.log("added: ", change.doc.data());
-					}
-					if (change.type === "modified") {
-						console.log("modified: ", change.doc.data());
-						try {
-							const unit = change.doc.data();
-							if (unit.type === "LAMP") {
-								updateLocalUnit(unit);
-							}
-						} catch (error) {
-							console.error(error);
-						}
-					}
-					if (change.type === "removed") {
-						console.log("removed: ", change.doc.data());
-					}
-				});
-			});
+    const unsubscribeDatabase = UNITS_COLLECTION.where(
+      "allowedUsers",
+      "array-contains",
+      kv.credential.user.uid
+    )
+      .where("type", "==", "LAMP")
+      .onSnapshot((querySnapshot) => {
+        querySnapshot.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            console.log("added: ", change.doc.data());
+            onAdd(change.doc.data());
+          }
+          if (change.type === "modified") {
+            console.log("modified: ", change.doc.data());
+            onModify(change.doc.data());
+          }
+          if (change.type === "removed") {
+            console.log("removed: ", change.doc.data());
+            // TODO: I am not sure, if I can read the data here. Check it and eventually just close the connection by uid. There must be a way to at least get this.
+            onRemove(change.doc.data());
+          }
+        });
+      });
 
-		kv.unsubscribeDatabase = async () => {
-			await unsubscribeDatabase();
-			delete kv.unsubscribeDatabase;
-		};
-	} catch (error) {
-		console.error("catched error", error);
-	}
+    kv.unsubscribeDatabase = async () => {
+      await unsubscribeDatabase();
+      delete kv.unsubscribeDatabase;
+    };
+  } catch (error) {
+    console.error("catched error", error);
+  }
 }
 
 module.exports = {
-	init,
+  init,
 };
