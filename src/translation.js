@@ -9,7 +9,7 @@ function dbStateToMessage(unit) {
 			data: 0,
 		};
 	}
-	if (state.type === "TIME") {
+	if (state.type === "AUTO") {
 		return {
 			action: "SET /output/power",
 			data: 1,
@@ -46,7 +46,7 @@ function messageToDBState(unit, message) {
 				type: "OFF",
 			};
 		}
-		case "TIME":
+		case "AUTO":
 		case "MANUAL": {
 			return {
 				color: currentHexColor,
