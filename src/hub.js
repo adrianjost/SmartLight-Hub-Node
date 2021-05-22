@@ -5,7 +5,8 @@ const { firebase, db } = require("./firebase");
 const { throttle } = require("throttle-debounce");
 
 const MESSAGE_ID_TIMEOUT = 10000;
-
+const CONNECTION_IS_HEALTHY_AFTER = 20000;
+const HEARTBEAT_INTERVAL = 60000;
 const UNITS_COLLECTION = db.collection("units");
 
 kv.sendMessageIDs = {};
@@ -23,6 +24,10 @@ async function updateDBFromMessage(unit, messageEvent) {
 	const newState = messageToDBState(unit, message);
 	console.log("new state", newState);
 	if (newState === null) {
+		return;
+	}
+	if (JSON.stringify(newState) === JSON.stringify(unit.state)) {
+		console.log("new state is identical to db state - skip db update");
 		return;
 	}
 	const unitRef = UNITS_COLLECTION.doc(unit.id);
@@ -49,7 +54,7 @@ function createConnection(unit) {
 		urlHealthTimeout = setTimeout(() => {
 			urlHealthTimeout = null;
 			workingURLIndex = currentIndex;
-		}, 20000);
+		}, CONNECTION_IS_HEALTHY_AFTER);
 
 		return url;
 	};
@@ -68,6 +73,13 @@ function onAdd(unit) {
 	connection.rws.onmessage = throttle(5000, false, (message) => {
 		updateDBFromMessage(unit, message);
 	});
+	connection.heartbeat = setInterval(() => {
+		const message = {
+			action: "GET /output",
+		};
+		const messageString = JSON.stringify(message);
+		connection.rws.send(messageString);
+	}, HEARTBEAT_INTERVAL);
 	kv.connections[unit.id] = connection;
 }
 
@@ -96,6 +108,7 @@ function onModify(unit) {
 
 function onRemove(unit) {
 	const connection = kv.connections[unit.id];
+	clearInterval(connection.heartbeat);
 	connection.rws.close();
 	delete kv.connections[unit.id];
 }
