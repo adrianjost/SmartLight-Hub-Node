@@ -3,6 +3,7 @@ const ReconnectingWebSocket = require("reconnecting-websocket");
 const WebSocket = require("ws");
 const { firebase, db } = require("./firebase");
 const { throttle } = require("throttle-debounce");
+const logger = require("./log");
 
 const MESSAGE_ID_TIMEOUT = 10000;
 const CONNECTION_IS_HEALTHY_AFTER = 20000;
@@ -18,16 +19,16 @@ async function updateDBFromMessage(unit, messageEvent) {
 	const message = JSON.parse(messageEvent.data);
 
 	if (kv.sendMessageIDs[message.id] === true) {
-		console.log("skip updating db, message was send by hub");
+		logger.info("skip updating db, message was send by hub");
 		return;
 	}
 	const newState = messageToDBState(unit, message);
-	console.log("new state", newState);
+	logger.info("new state", newState);
 	if (newState === null) {
 		return;
 	}
 	if (JSON.stringify(newState) === JSON.stringify(unit.state)) {
-		console.log("new state is identical to db state - skip db update");
+		logger.info("new state is identical to db state - skip db update");
 		return;
 	}
 	const unitRef = UNITS_COLLECTION.doc(unit.id);
@@ -69,7 +70,7 @@ function createConnection(unit) {
 
 function onAdd(unit) {
 	const connection = createConnection(unit);
-	connection.rws.onerror = console.error;
+	connection.rws.onerror = logger.error;
 	connection.rws.onmessage = throttle(5000, false, (message) => {
 		updateDBFromMessage(unit, message);
 	});
@@ -102,7 +103,7 @@ function onModify(unit) {
 	const messageString = JSON.stringify(message);
 
 	// TODO: only send message if state has really changed
-	console.log(`sending ${messageString} to ${unit.id}`);
+	logger.info(`sending ${messageString} to ${unit.id}`);
 	connection.rws.send(messageString);
 }
 
@@ -124,16 +125,16 @@ async function init() {
 	try {
 		const savedLogin = localStorage.getItem("credential");
 		if (savedLogin === null) {
-			console.log("No saved credential found");
+			logger.info("No saved credential found");
 			return;
 		}
-		console.log("Login with saved credentials");
+		logger.info("Login with saved credentials");
 		loginData = JSON.parse(savedLogin);
 		kv.credential = await firebase
 			.auth()
 			.signInWithEmailAndPassword(loginData.email, loginData.password);
 
-		console.log(kv.credential.user.uid);
+		logger.info(kv.credential.user.uid);
 
 		const unsubscribeDatabase = UNITS_COLLECTION.where(
 			"allowedUsers",
@@ -144,15 +145,15 @@ async function init() {
 			.onSnapshot((querySnapshot) => {
 				querySnapshot.docChanges().forEach((change) => {
 					if (change.type === "added") {
-						console.log("added: ", change.doc.data());
+						logger.info("added: ", change.doc.data());
 						onAdd(change.doc.data());
 					}
 					if (change.type === "modified") {
-						console.log("modified: ", change.doc.data());
+						logger.info("modified: ", change.doc.data());
 						onModify(change.doc.data());
 					}
 					if (change.type === "removed") {
-						console.log("removed: ", change.doc.data());
+						logger.info("removed: ", change.doc.data());
 						// TODO: I am not sure, if I can read the data here. Check it and eventually just close the connection by uid. There must be a way to at least get this.
 						onRemove(change.doc.data());
 					}
@@ -165,7 +166,7 @@ async function init() {
 			resetConnections();
 		};
 	} catch (error) {
-		console.error("catched error", error);
+		logger.error(error);
 	}
 }
 

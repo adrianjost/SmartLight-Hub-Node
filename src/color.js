@@ -41,7 +41,6 @@ const channelToColor = (mapping = { r: 1, g: 2, b: 3 }, channelValues = {}) => {
 	out["r"] = channelValues[mapping["r"].toString()] || 0;
 	out["g"] = channelValues[mapping["g"].toString()] || 0;
 	out["b"] = channelValues[mapping["b"].toString()] || 0;
-	console.log("channelToColor", channelValues, out);
 	return out;
 };
 

@@ -1,8 +1,9 @@
 const { hex2rgb, colorToChannel, channelToColor, rgb2hex } = require("./color");
+const logger = require("./log");
 
 function dbStateToMessage(unit) {
 	const state = unit.state;
-	console.log(state);
+	logger.info(state);
 	if (state.type === "OFF") {
 		return {
 			action: "SET /output/power",
@@ -29,15 +30,15 @@ function dbStateToMessage(unit) {
 }
 
 function messageToDBState(unit, message) {
-	console.log("got message:", message);
+	logger.info("got message:", message);
 	if (message.action !== "GET /output") {
-		console.info(message);
-		console.error("can't handle message (yet)");
+		logger.info(message);
+		logger.error("can't handle message (yet)");
 		return null;
 	}
 	const [one, two] = message.data.channel;
 	const currentRGBColor = channelToColor(unit.channelMap, { 1: one, 2: two });
-	console.log("currentRGBColor", currentRGBColor);
+	logger.info("currentRGBColor", currentRGBColor);
 	const currentHexColor = rgb2hex(currentRGBColor);
 	switch (message.data.state) {
 		case "OFF": {

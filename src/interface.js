@@ -3,7 +3,7 @@ const fs = require("fs").promises;
 const { urlencoded } = require("body-parser");
 const { localStorage, kv } = require("./storage");
 const { firebase } = require("./firebase");
-
+const logger = require("./log");
 const { init: initHub } = require("./hub");
 
 const head = `<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -45,14 +45,14 @@ const init = () => {
     `);
 		})
 		.post("/", async (req, res) => {
-			console.log("BODY:", JSON.stringify(req.body));
+			logger.info("BODY:", JSON.stringify(req.body));
 			const { email, password } = req.body;
 			try {
 				kv.credential = await firebase
 					.auth()
 					.signInWithEmailAndPassword(email, password);
 			} catch (error) {
-				console.error(error.code, error.message);
+				logger.error(error.code, error.message);
 				res.end(error.message);
 			}
 			localStorage.setItem(
@@ -72,7 +72,7 @@ const init = () => {
 			localStorage.clear();
 			kv.credential = null;
 			await firebase.auth().signOut();
-			console.log("logged out");
+			logger.info("logged out");
 			res.writeHead(200, {
 				"Content-Type": "text/html; charset=utf-8",
 			});
@@ -90,7 +90,7 @@ const init = () => {
 		})
 		.listen(3000, (err) => {
 			if (err) throw err;
-			console.log(`> Running on localhost:3000`);
+			logger.info(`> Running on localhost:3000`);
 		});
 };
 
