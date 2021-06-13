@@ -32,7 +32,6 @@ async function updateDBFromMessage(unit, messageEvent) {
 		return;
 	}
 	const unitRef = UNITS_COLLECTION.doc(unit.id);
-	// TODO: only update state if changed
 	await unitRef.update({
 		state: newState,
 	});
@@ -85,11 +84,9 @@ function onAdd(unit) {
 }
 
 function onModify(unit) {
-	// TODO: modify connection url list when unit get's modified
 	const connection = kv.connections[unit.id];
 	const newUrls = [`ws://${unit.hostname}`, `ws://${unit.ip}`];
-	connection.urls.splice(0, connection.urls.length);
-	connection.urls.push(...newUrls);
+	connection.urls.splice(0, connection.urls.length, ...newUrls);
 
 	const message = dbStateToMessage(unit);
 
@@ -102,7 +99,6 @@ function onModify(unit) {
 
 	const messageString = JSON.stringify(message);
 
-	// TODO: only send message if state has really changed
 	logger.info(`sending ${messageString} to ${unit.id}`);
 	connection.rws.send(messageString);
 }
