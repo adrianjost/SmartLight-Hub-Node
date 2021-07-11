@@ -150,7 +150,7 @@ async function init() {
 					}
 					if (change.type === "removed") {
 						logger.info("removed: ", change.doc.data());
-						// TODO: I am not sure, if I can read the data here. Check it and eventually just close the connection by uid. There must be a way to at least get this.
+						// TODO [$60eb06826d173a00095935c5]: I am not sure, if I can read the data here. Check it and eventually just close the connection by uid. There must be a way to at least get this.
 						onRemove(change.doc.data());
 					}
 				});
