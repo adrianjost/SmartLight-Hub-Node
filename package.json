@@ -5,8 +5,8 @@
 	"scripts": {
 		"start": "cross-env NODE_ENV=production git pull && npm ci && node ./index.js",
 		"dev": "cross-env NODE_ENV=development nodemon ./index.js",
-		"lint": "prettier --write .",
-		"lint:ci": "prettier --check ."
+		"lint": "prettier --write ./src",
+		"lint:ci": "prettier --check ./src"
 	},
 	"author": "",
 	"license": "ISC",
