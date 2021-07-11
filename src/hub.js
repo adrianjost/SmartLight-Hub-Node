@@ -69,7 +69,7 @@ function createConnection(unit) {
 
 function onAdd(unit) {
 	const connection = createConnection(unit);
-	connection.rws.onerror = logger.error;
+	connection.rws.onerror = logger.info;
 	connection.rws.onmessage = throttle(5000, false, (message) => {
 		updateDBFromMessage(unit, message);
 	});
