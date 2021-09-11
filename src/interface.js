@@ -1,10 +1,13 @@
+//@ts-check
 const polka = require("polka");
 const fs = require("fs").promises;
 const { urlencoded } = require("body-parser");
 const { localStorage, kv } = require("./storage");
-const { firebase } = require("./firebase");
+const { auth } = require("./firebase");
 const logger = require("./log");
 const { init: initHub } = require("./hub");
+
+const { signInWithEmailAndPassword, signOut } = require("firebase/auth");
 
 const head = `<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="/styles.css">`;
@@ -48,9 +51,7 @@ const init = () => {
 			logger.info("BODY:", JSON.stringify(req.body));
 			const { email, password } = req.body;
 			try {
-				kv.credential = await firebase
-					.auth()
-					.signInWithEmailAndPassword(email, password);
+				kv.credential = await signInWithEmailAndPassword(auth, email, password);
 			} catch (error) {
 				logger.error(error.code, error.message);
 				res.end(error.message);
@@ -71,7 +72,7 @@ const init = () => {
 			}
 			localStorage.clear();
 			kv.credential = null;
-			await firebase.auth().signOut();
+			await signOut(auth);
 			logger.info("logged out");
 			res.writeHead(200, {
 				"Content-Type": "text/html; charset=utf-8",

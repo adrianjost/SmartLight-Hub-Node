@@ -1,6 +1,7 @@
-const firebase = require("firebase/app");
-require("firebase/auth");
-require("firebase/firestore");
+//@ts-check
+const { initializeApp } = require("firebase/app");
+const { getAuth } = require("firebase/auth");
+const { getFirestore } = require("firebase/firestore");
 
 const firebaseConfig = {
 	apiKey: "AIzaSyDJ17cuZ4P1YzSTOWtU_WqOKMloaqg7x_Q",
@@ -11,11 +12,10 @@ const firebaseConfig = {
 	messagingSenderId: "535232876187",
 	appId: "1:535232876187:web:d1d32ada292db2bb3c803e",
 };
-firebase.initializeApp(firebaseConfig);
 
-const db = firebase.firestore();
+const firebaseApp = initializeApp(firebaseConfig);
 
 module.exports = {
-	firebase,
-	db,
+	auth: getAuth(firebaseApp),
+	db: getFirestore(firebaseApp),
 };

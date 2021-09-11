@@ -1,5 +1,6 @@
+//@ts-check
 function componentToHex(color) {
-	var hex = color.toString(16);
+	const hex = color.toString(16);
 	return hex.length === 1 ? "0" + hex : hex;
 }
 const rgb2hex = ({ r, g, b }) => {

@@ -1,14 +1,24 @@
+//@ts-check
 const { localStorage, kv } = require("./storage");
 const ReconnectingWebSocket = require("reconnecting-websocket");
 const WebSocket = require("ws");
-const { firebase, db } = require("./firebase");
+const { auth, db } = require("./firebase");
 const { throttle } = require("throttle-debounce");
 const logger = require("./log");
+const { signInWithEmailAndPassword } = require("firebase/auth");
+const {
+	collection,
+	doc,
+	updateDoc,
+	query,
+	where,
+	onSnapshot,
+} = require("firebase/firestore");
 
 const MESSAGE_ID_TIMEOUT = 10000;
 const CONNECTION_IS_HEALTHY_AFTER = 20000;
 const HEARTBEAT_INTERVAL = 60000;
-const UNITS_COLLECTION = db.collection("units");
+const UNITS_COLLECTION = collection(db, "units");
 
 kv.sendMessageIDs = {};
 kv.connections = {};
@@ -31,8 +41,8 @@ async function updateDBFromMessage(unit, messageEvent) {
 		logger.info("new state is identical to db state - skip db update");
 		return;
 	}
-	const unitRef = UNITS_COLLECTION.doc(unit.id);
-	await unitRef.update({
+	const unitRef = doc(UNITS_COLLECTION, unit.id);
+	await updateDoc(unitRef, {
 		state: newState,
 	});
 }
@@ -58,6 +68,7 @@ function createConnection(unit) {
 
 		return url;
 	};
+	// @ts-ignore
 	const rws = new ReconnectingWebSocket(urlProvider, [], {
 		WebSocket: WebSocket,
 	});
@@ -125,20 +136,22 @@ async function init() {
 			return;
 		}
 		logger.info("Login with saved credentials");
-		loginData = JSON.parse(savedLogin);
-		kv.credential = await firebase
-			.auth()
-			.signInWithEmailAndPassword(loginData.email, loginData.password);
+		const loginData = JSON.parse(savedLogin);
+		kv.credential = await signInWithEmailAndPassword(
+			auth,
+			loginData.email,
+			loginData.password
+		);
 
 		logger.info(kv.credential.user.uid);
 
-		const unsubscribeDatabase = UNITS_COLLECTION.where(
-			"allowedUsers",
-			"array-contains",
-			kv.credential.user.uid
-		)
-			.where("type", "==", "LAMP")
-			.onSnapshot((querySnapshot) => {
+		const unsubscribeDatabase = onSnapshot(
+			query(
+				UNITS_COLLECTION,
+				where("allowedUsers", "array-contains", kv.credential.user.uid),
+				where("type", "==", "LAMP")
+			),
+			(querySnapshot) => {
 				querySnapshot.docChanges().forEach((change) => {
 					if (change.type === "added") {
 						logger.info("added: ", change.doc.data());
@@ -154,10 +167,11 @@ async function init() {
 						onRemove(change.doc.data());
 					}
 				});
-			});
+			}
+		);
 
 		kv.unsubscribeDatabase = async () => {
-			await unsubscribeDatabase();
+			unsubscribeDatabase();
 			delete kv.unsubscribeDatabase;
 			resetConnections();
 		};

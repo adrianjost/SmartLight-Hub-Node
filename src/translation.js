@@ -1,3 +1,4 @@
+//@ts-check
 const { hex2rgb, colorToChannel, channelToColor, rgb2hex } = require("./color");
 const logger = require("./log");
 
