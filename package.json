@@ -2,14 +2,15 @@
 	"name": "smartlight-node-hub",
 	"version": "1.0.0",
 	"description": "",
+	"repository": "https://github.com/adrianjost/SmartLight-Hub-Node",
 	"scripts": {
 		"start": "cross-env NODE_ENV=production git pull && npm ci && node ./index.js",
 		"dev": "cross-env NODE_ENV=development nodemon ./index.js",
 		"lint": "prettier --write ./src",
 		"lint:ci": "prettier --check ./src"
 	},
-	"author": "",
-	"license": "ISC",
+	"author": "Adrian Jost (https://adrianjost.dev)",
+	"license": "MIT",
 	"dependencies": {
 		"@sentry/node": "^6.12.0",
 		"@sentry/tracing": "^6.12.0",
