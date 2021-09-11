@@ -21,3 +21,4 @@ npm run start
 ```
 
 The production script fetches the latest version of this codebase and installs all dependencies before starting the actual server. This enables automatic updates when deployed on a headless raspberry pi. All you need to do, is to register a regular cronjob to restart your pi and execute `npm run start` on boot.
+I personally am using [`pm2`](https://pm2.keymetrics.io/docs/usage/quick-start/#:~:text=Setup%20startup%20script) (`pm2 start npm -- start`) for that.
