@@ -12,7 +12,7 @@
 	"author": "Adrian Jost (https://adrianjost.dev)",
 	"license": "MIT",
 	"dependencies": {
-		"@sentry/node": "^6.15.0",
+		"@sentry/node": "^6.16.0",
 		"@sentry/tracing": "^6.15.0",
 		"body-parser": "^1.19.0",
 		"firebase": "^9.6.0",
