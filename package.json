@@ -14,7 +14,7 @@
 	"dependencies": {
 		"@sentry/node": "^6.16.1",
 		"@sentry/tracing": "^6.16.0",
-		"body-parser": "^1.19.0",
+		"body-parser": "^1.19.1",
 		"firebase": "^9.6.1",
 		"node-localstorage": "^2.2.1",
 		"polka": "^0.5.2",
