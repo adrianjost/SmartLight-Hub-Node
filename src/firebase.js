@@ -4,13 +4,13 @@ const { getAuth } = require("firebase/auth");
 const { getFirestore } = require("firebase/firestore");
 
 const firebaseConfig = {
-	apiKey: "AIzaSyDJ17cuZ4P1YzSTOWtU_WqOKMloaqg7x_Q",
-	authDomain: "smartlight-4861d.firebaseapp.com",
-	databaseURL: "https://smartlight-4861d.firebaseio.com",
-	projectId: "smartlight-4861d",
-	storageBucket: "smartlight-4861d.appspot.com",
-	messagingSenderId: "535232876187",
-	appId: "1:535232876187:web:d1d32ada292db2bb3c803e",
+	apiKey: "AIzaSyD97NBMCQF1pvzEUP7xpjQ1nW362ym8hq0",
+	authDomain: "aj-smartlight.firebaseapp.com",
+	databaseURL: "https://aj-smartlight.firebaseio.com",
+	projectId: "aj-smartlight",
+	storageBucket: "aj-smartlight.appspot.com",
+	messagingSenderId: "60490510559",
+	appId: "1:60490510559:web:dfd98676749a102853396a",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
