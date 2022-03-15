@@ -89,9 +89,9 @@ const init = () => {
 			});
 			res.end(await fs.readFile("./styles.css"));
 		})
-		.listen(3000, (err) => {
+		.listen(80, (err) => {
 			if (err) throw err;
-			logger.info(`> Running on localhost:3000`);
+			logger.info(`> Running on localhost:80`);
 		});
 };
 
