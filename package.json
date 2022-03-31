@@ -13,7 +13,7 @@
 	"license": "MIT",
 	"dependencies": {
 		"@sentry/node": "^6.19.3",
-		"@sentry/tracing": "^6.19.2",
+		"@sentry/tracing": "^6.19.3",
 		"body-parser": "^1.19.2",
 		"firebase": "^9.6.10",
 		"node-localstorage": "^2.2.1",
