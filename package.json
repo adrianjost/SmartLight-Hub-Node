@@ -15,7 +15,7 @@
 		"@sentry/node": "^7.46.0",
 		"@sentry/tracing": "^7.45.0",
 		"body-parser": "^1.20.2",
-		"firebase": "^9.18.0",
+		"firebase": "^9.19.0",
 		"node-localstorage": "^2.2.1",
 		"polka": "^0.5.2",
 		"reconnecting-websocket": "^4.4.0",
